@@ -1,69 +1,8 @@
 from datetime import datetime
 from qtstrap import *
-from PySide2.QtCore import *
 from calendar import Calendar
+from day_widget import DayWidget
 from menu import MainMenuBar, LoginStatusLabel
-from scraper import Scraper
-
-
-SFE_URL = 'https://tdsb.eschoolsolutions.com'
-
-
-class DayWidget(QWidget):
-    def __init__(self, parent=None):
-        super().__init__(parent=parent)
-        self.date = None
-        self.jobs = []
-
-        policy = self.sizePolicy()
-        policy.setRetainSizeWhenHidden(True)
-        self.setSizePolicy(policy)
-
-        self.content = QTextEdit()
-        self.content.setReadOnly(True)
-
-        self.active_color = '#F5F7FA'
-        self.inactive_color = '#FFFFFF'
-
-        self.content.setStyleSheet(self.style_color(self.inactive_color))
-
-        with CVBoxLayout(self) as layout:
-            layout.setContentsMargins(0, 0, 0, 0)
-            layout.add(self.content)
-
-    def write_line(self, data):
-        self.content.setText(data + '\n')
-
-    def update(self):
-        day_of_month = str(self.date[2])
-
-        self.write_line(day_of_month + '\n')
-
-        if not self.jobs:
-            return
-
-        for job in self.jobs:
-            if job['job_start_date'] == self.date[:-1]:
-                self.content.append(job['Job #'])
-                self.content.append(job['Start Date/Time'])
-                self.content.append(job['End Date/Time'])
-                self.content.append(job['Location'])
-                self.content.append(job['Classification'])
-                self.content.append(job['Employee in for'])
-                self.content.append(job['Work Days'])
-
-        self.content.ensureCursorVisible()
-
-    def style_color(self, c):
-        return f'QTextEdit {{ background-color: {c} }}'
-
-    def event(self, ev):
-        if ev.type() == QEvent.Type.Enter:
-            self.content.setStyleSheet(self.style_color(self.active_color))
-
-        if ev.type() == QEvent.Type.Leave:
-            self.content.setStyleSheet(self.style_color(self.inactive_color))
-        return True
 
 
 class MonthWidget(QWidget):
@@ -91,14 +30,14 @@ class DateLabel(QWidget):
 
 
 class CalendarWidget(QWidget):
-    def __init__(self, parent=None):
+    def __init__(self, scraper, parent=None):
         super().__init__(parent=parent)
-        self.scraper = Scraper(SFE_URL)
+        self.scraper = scraper
         self.menu = MainMenuBar(scraper=self.scraper)
 
         self.login_status_label = LoginStatusLabel()
 
-        self.calendar = Calendar()
+        self.calendar = Calendar(firstweekday=6)
 
         self.month_index = None
         self.year_index = None
@@ -112,8 +51,8 @@ class CalendarWidget(QWidget):
         self.prev_button = QPushButton('Previous', clicked=self.previous)
         self.next_button = QPushButton('Next', clicked=self.next)
 
-        self.weekdays = ['Monday', 'Tuesday', 'Wednesday',
-                         'Thursday', 'Friday', 'Saturday', 'Sunday']
+        self.weekdays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday',
+                         'Thursday', 'Friday', 'Saturday']
         self.months = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December']
 
@@ -163,9 +102,14 @@ class CalendarWidget(QWidget):
         for week in self.current_month.days:
             for day in week:
                 try:
+                    day.reset()
                     day.show()
                     current_day = next(self.dates)
                     day.date = current_day
+
+                    if day.date[1] != month:
+                        day.padding = True
+                        day.set_color()
 
                     if self.scraper.schedule:
                         self.check_for_job(day)
@@ -200,7 +144,7 @@ class CalendarWidget(QWidget):
     def check_for_job(self, day):
         if day.date:
             for job in self.scraper.schedule:
-                if job['job_start_date'] == day.date[:-1]:
+                if job['job_start_date'] == day.date[:-1] and job not in day.jobs:
                     day.jobs.append(job)
 
     def update(self):
