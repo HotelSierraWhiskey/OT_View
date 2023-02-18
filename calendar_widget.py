@@ -33,7 +33,7 @@ class CalendarWidget(QWidget):
     def __init__(self, scraper, parent=None):
         super().__init__(parent=parent)
         self.scraper = scraper
-        self.menu = MainMenuBar(scraper=self.scraper)
+        self.menu_bar = MainMenuBar(scraper=self.scraper)
 
         self.login_status_label = LoginStatusLabel()
 
@@ -56,20 +56,20 @@ class CalendarWidget(QWidget):
         self.months = ['January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December']
 
-        self.menu.file_submenu.login_popup.login_status_signal.connect(
+        self.menu_bar.file_submenu.login_popup.login_status_signal.connect(
             self.login_status_label.set_connected)
 
-        self.menu.file_submenu.login_popup.login_status_signal.connect(
+        self.menu_bar.file_submenu.login_popup.login_status_signal.connect(
             self.update)
 
-        self.menu.file_submenu.login_popup.login_status_signal.connect(
+        self.menu_bar.file_submenu.login_popup.login_status_signal.connect(
             self.reset)
 
         self.reset()
 
         with CVBoxLayout(self) as layout:
             with layout.hbox(align='left') as layout:
-                layout.add(self.menu)
+                layout.add(self.menu_bar)
             with layout.hbox(align='left') as layout:
                 layout.add(self.login_status_label)
             with layout.hbox(align='right') as layout:
