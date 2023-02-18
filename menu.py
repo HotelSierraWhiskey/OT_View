@@ -1,5 +1,4 @@
 from qtstrap import *
-from scraper import Scraper
 
 
 class LoginStatusLabel(QLabel):
@@ -57,8 +56,6 @@ class LoginPopup(QDialog):
         password = self.password_field.text()
         try:
             self.scraper.log_in(username, password)
-            # self.scraper.get_assignments()
-            # self.scraper.write_json_schedule()
             self.login_status_signal.emit(True)
             self.hide()
         except Exception as exc:
@@ -76,6 +73,7 @@ class FileMenu(QMenu):
 
         self.addAction('Connect', self.launch_login_popup)
         self.addAction('Disconnect', lambda: print('disconnect'))
+        self.addAction('Restore All', lambda: print('restore all'))
         self.addSeparator()
         self.addAction('Quit', lambda: print('quit'))
 
@@ -100,3 +98,26 @@ class MainMenuBar(QMenuBar):
 
         self.addMenu(self.file_submenu)
         self.addMenu(self.preferences_submenu)
+
+
+class RightClickDayMenu(QMenu):
+
+    edit_signal = Signal()
+    restore_signal = Signal()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(title='Preferences', *args, **kwargs)
+        self.current_day = None
+        self.hide()
+        self.addAction('Edit', self.on_edit)
+        self.addAction('Restore', self.on_restore)
+
+    def launch(self, day):
+        self.current_day = day
+        self.popup(QCursor.pos())
+
+    def on_edit(self):
+        self.edit_signal.emit()
+
+    def on_restore(self):
+        self.restore_signal.emit()

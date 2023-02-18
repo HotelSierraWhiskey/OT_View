@@ -1,16 +1,28 @@
 from qtstrap import *
+from menu import RightClickDayMenu
 
 
 class Content(QTextEdit):
 
-    mouse_press_signal = Signal()
+    left_mouse_button_signal = Signal()
+    right_mouse_button_signal = Signal()
 
     def __init__(self, parent=None):
         super().__init__(parent=parent)
+        self.menu = QMenu()
 
-    def mousePressEvent(self, event: PySide2.QtGui.QMouseEvent) -> None:
-        self.mouse_press_signal.emit()
-        return super().mousePressEvent(event)
+    def edit(self):
+        pass
+        
+    def restore(self):
+        pass
+
+    def mousePressEvent(self, e):
+        if QMouseEvent.button(e) == Qt.LeftButton:
+            self.left_mouse_button_signal.emit()
+        if QMouseEvent.button(e) == Qt.RightButton:
+            self.right_mouse_button_signal.emit()
+        return super().mousePressEvent(e)
 
 
 class DayWidget(QWidget):
@@ -23,10 +35,15 @@ class DayWidget(QWidget):
         policy.setRetainSizeWhenHidden(True)
         self.setSizePolicy(policy)
 
+        self.menu = RightClickDayMenu()
+
         self.content = Content()
-        self.content.mouse_press_signal.connect(self.toggle_highlight)
-        self.content.setReadOnly(True)
-        self.content.viewport().setCursor(Qt.ArrowCursor)
+        self.content.left_mouse_button_signal.connect(self.toggle_highlight)
+        self.content.right_mouse_button_signal.connect(
+            lambda: self.menu.launch(self))
+
+        self.menu.edit_signal.connect(self.content.edit)
+        self.menu.restore_signal.connect(self.content.restore)
 
         self.padding = False
         self.highlighted = False
